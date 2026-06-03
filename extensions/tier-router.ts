@@ -8,7 +8,8 @@
  *   opus    - essential work: implementation, refactor, deep debug (most expensive)
  *
  * Decision precedence (first match wins):
- *   1. Explicit bang prefix:      "!haiku ...", "!sonnet ...", "!opus ..."   (prefix is stripped)
+ *   1. Explicit comma prefix:    ",haiku ...", ",sonnet ...", ",opus ..."   (prefix is stripped)
+ *      (We use "," not "!" because pi reserves "!" for shell-out: e.g. "!ls" runs ls in bash.)
  *   2. Manual pin:                /route off  ->  stays on whatever model is currently set
  *   3. Skill-command heuristic:   /skill:brainstorming|writing-plans|po-advisor|architecture-advisor -> sonnet
  *                                 /skill:atlassian (read-only verbs) -> haiku
@@ -191,7 +192,9 @@ function classify(rawText: string): { tier: Tier; reason: string } | null {
 }
 
 function parseBangPrefix(text: string): { tier: Tier; rest: string } | null {
-	const m = text.match(/^\s*!(haiku|sonnet|opus)\b\s*(.*)$/is);
+	// Comma-prefix override: ",haiku ...", ",sonnet ...", ",opus ...".
+	// We intentionally do NOT use "!" because pi reserves it for shell-out.
+	const m = text.match(/^\s*,(haiku|sonnet|opus)\b\s*(.*)$/is);
 	if (!m) return null;
 	return { tier: m[1].toLowerCase() as Tier, rest: m[2] };
 }
@@ -274,7 +277,7 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	// Strip "!tier " prefix before skill / template expansion.
+	// Strip ",tier " prefix before skill / template expansion.
 	pi.on("input", async (event, _ctx) => {
 		if (event.source !== "interactive" && event.source !== "rpc") return;
 		const parsed = parseBangPrefix(event.text);
@@ -287,11 +290,11 @@ export default function (pi: ExtensionAPI) {
 	pi.on("before_agent_start", async (event, ctx) => {
 		routedThisPrompt = false; // reset; we will set true if we route.
 
-		// Highest-priority: user override via !prefix.
+		// Highest-priority: user override via ,prefix.
 		if (oneShot) {
 			const tier = oneShot;
 			oneShot = undefined;
-			await applyTier(tier, "!override", ctx);
+			await applyTier(tier, ",override", ctx);
 			routedThisPrompt = true;
 			return;
 		}

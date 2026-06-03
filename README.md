@@ -1,5 +1,7 @@
 # pi-frugal
 
+![demo](docs/demo.gif)
+
 **A lean, cost-aware [pi](https://pi.dev) setup** — tiered model routing, live AiCredits visibility, and a thin Atlassian (Jira / Confluence / Bitbucket) overlay. Designed to give you the productivity of obra/superpowers + the API reach of langpingxue/atlassian-skills, without the per-turn token bloat of MCP servers or one-model-for-everything defaults.
 
 ---
@@ -8,7 +10,7 @@
 
 | Piece | Type | Purpose |
 |---|---|---|
-| **tier-router** | extension | Auto-picks **Haiku** (retrieval/lookup), **Sonnet** (design/brainstorming), or **Opus** (essential implementation) per prompt. Explicit `!haiku` / `!sonnet` / `!opus` overrides; `/route off` to disable. Conservative: ambiguous prompts default to Opus, never silently downgrades, honours user model pins. |
+| **tier-router** | extension | Auto-picks **Haiku** (retrieval/lookup), **Sonnet** (design/brainstorming), or **Opus** (essential implementation) per prompt. Explicit `,haiku` / `,sonnet` / `,opus` overrides; `/route off` to disable. Conservative: ambiguous prompts default to Opus, never silently downgrades, honours user model pins. |
 | **aicredits-footer** | extension | Replaces pi's default USD footer with **AiCredits** computed from your real billing rates. Per-session totals shown live as `↑in R cacheRead W cacheWrite ↓out C credits`. Rates fully overridable via `AICREDITS_RATES` env. |
 | **atlassian** (overlay) | skill | Thin (~250 line) overlay that tells the agent how to invoke `langpingxue/atlassian-skills` from inside pi, with a `<HARD-GATE>` around every mutating call. Credentials live in `~/.pi/agent/secrets/atlassian.env` (chmod 600) — never in the repo. |
 
@@ -101,7 +103,7 @@ If your provider supports more (e.g. direct Anthropic): use `minimal` / `low` / 
 | `/route` or `/route show` | Show router mode, last decision, current model, tier map, thinking-per-tier |
 | `/route off` / `/route auto` | Disable / re-enable auto-routing |
 | `/route haiku\|sonnet\|opus` | One-shot: force next prompt to that tier |
-| `!haiku ...` / `!sonnet ...` / `!opus ...` | Inline override per prompt (prefix stripped) |
+| `,haiku ...` / `,sonnet ...` / `,opus ...` | Inline override per prompt (prefix stripped). We use `,` not `!` because pi reserves `!` for shell-out. |
 | `/credits-footer` | Toggle the AiCredits footer |
 | `/credits-rates` | Show the rate table currently in use |
 

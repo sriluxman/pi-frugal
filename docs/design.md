@@ -80,7 +80,8 @@ mitigate with:
 - Conservative tie-breaking: `opus > sonnet > haiku`. Ambiguity always
   upgrades, never downgrades.
 - A default-to-opus fallback when no signal is found.
-- Explicit user overrides (`!haiku`, `!sonnet`, `!opus`) for prompts where
+- Explicit user overrides (`,haiku`, `,sonnet`, `,opus` — comma not bang,
+  since pi reserves `!` for shell-out) for prompts where
   the heuristic guesses wrong.
 
 ### 5. Safety guards on auto-routing
