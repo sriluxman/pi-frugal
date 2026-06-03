@@ -153,9 +153,7 @@ makes the 3-command sequence into a 1-command sequence for convenience.
 
 ## Provenance
 
-This package was extracted from a working setup documented at:
-https://confluence.br-automation.com/spaces/THCU/pages/707077233
-(internal — Confluence page on the lean-agent-harness migration).
-
-The measured numbers in the README (~33×, ~2.7×, etc.) come from that
-migration's before/after benchmarks.
+This package was extracted from a working setup at an industrial-automation
+company. The measured numbers in the README (∼33× token overhead reduction,
+∼2.7× blended cost reduction) come from that migration's before/after
+benchmarks documented in an internal Confluence space.
