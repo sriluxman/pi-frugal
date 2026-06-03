@@ -1,0 +1,34 @@
+{
+  "name": "pi-frugal",
+  "version": "0.1.0",
+  "description": "A lean, cost-aware pi setup: tiered model routing (Haiku/Sonnet/Opus), live AiCredits footer, and a thin Atlassian (Jira/Confluence/Bitbucket) overlay — composes cleanly with obra/superpowers and langpingxue/atlassian-skills.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi-skill",
+    "atlassian",
+    "jira",
+    "confluence",
+    "bitbucket",
+    "cost-aware",
+    "tiered-routing",
+    "anthropic",
+    "github-copilot"
+  ],
+  "license": "MIT",
+  "author": "sriluxman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sriluxman/pi-frugal"
+  },
+  "homepage": "https://github.com/sriluxman/pi-frugal",
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "pi": {
+    "extensions": ["./extensions/tier-router.ts", "./extensions/aicredits-footer.ts"],
+    "skills": ["./skills/atlassian.md"]
+  }
+}
