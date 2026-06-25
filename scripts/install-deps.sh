@@ -2,8 +2,9 @@
 # install-deps.sh — installs pi-frugal's two upstream skill packs.
 #
 # pi-frugal composes with:
-#   - obra/superpowers          (14 productivity skills)
-#   - sriluxman/atlassian-skills   (Jira/Confluence/Bitbucket/Requirements Yogi Python toolkit)
+#   - obra/superpowers           (14 productivity skills)
+#   - mattpocock/skills          (productivity + engineering skill pack)
+#   - sriluxman/atlassian-skills (Jira/Confluence/Bitbucket/Requirements Yogi Python toolkit)
 #
 # Re-running is safe: pi install is idempotent.
 
@@ -13,6 +14,8 @@ echo "Installing upstream skill packs that pi-frugal composes with…"
 echo
 
 pi install git:github.com/obra/superpowers
+echo
+pi install git:github.com/mattpocock/skills
 echo
 pi install git:github.com/sriluxman/atlassian-skills
 

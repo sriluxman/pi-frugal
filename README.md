@@ -146,6 +146,7 @@ See [docs/design.md](docs/design.md) for the full design rationale.
 ## Composes with (not bundled)
 
 - [obra/superpowers](https://github.com/obra/superpowers) — 14 productivity skills (brainstorming, writing-plans, systematic-debugging, verification-before-completion, …)
+- [mattpocock/skills](https://github.com/mattpocock/skills) — productivity bundle (grill-me, grilling, handoff, teach, writing-great-skills) + engineering bundle (tdd, codebase-design, diagnosing-bugs, triage, prototype, to-prd, to-issues, improve-codebase-architecture, …)
 - [sriluxman/atlassian-skills](https://github.com/sriluxman/atlassian-skills) — Python toolkit with Requirements Yogi support: 45+ functions across Jira / Confluence / Bitbucket / Requirements Yogi
 
 Both are installed via `pi install` and stay current with their upstream.
