@@ -1,6 +1,6 @@
 {
   "name": "pi-frugal",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A lean, cost-aware pi setup: tiered model routing (Haiku/Sonnet/Opus), live AiCredits footer, and a thin Atlassian (Jira/Confluence/Bitbucket/Requirements Yogi) overlay — composes cleanly with obra/superpowers and sriluxman/atlassian-skills (with Req Yogi support).",
   "keywords": [
     "pi-package",

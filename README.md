@@ -22,25 +22,28 @@
 
 ---
 
-## Install (3 commands + 1 setup)
+## Install (2 commands)
 
 ```bash
 # 1. install pi-frugal itself
 pi install git:github.com/sriluxman/pi-frugal
 
-# 2. install the upstream skill packs it composes with
-bash ~/.pi/agent/git/github.com/sriluxman/pi-frugal/scripts/install-deps.sh
-#    (this runs `pi install` for obra/superpowers + sriluxman/atlassian-skills (with Req Yogi)
-#     and prepares the Python venv)
-
-# 3. configure your Atlassian credentials (interactive; writes secrets file 0600)
-bash ~/.pi/agent/git/github.com/sriluxman/pi-frugal/scripts/setup-atlassian.sh
-
-# 4. (optional) verify
-bash ~/.pi/agent/git/github.com/sriluxman/pi-frugal/scripts/verify-atlassian.sh
+# 2. one-shot setup: pulls upstream skill packs, prompts for Atlassian PATs, verifies auth
+bash ~/.pi/agent/git/github.com/sriluxman/pi-frugal/scripts/setup.sh
 ```
 
-Then just run `pi`. The footer shows your credit spend live; the tier router picks the model per prompt.
+That's it. The footer shows your credit spend live; the tier router picks the model per prompt.
+
+### Setup flags
+
+```bash
+bash .../scripts/setup.sh --no-creds    # skip the Atlassian PAT prompts (configure later)
+bash .../scripts/setup.sh --no-verify   # skip the post-install Jira verification call
+```
+
+The individual sub-scripts (`install-deps.sh`, `setup-atlassian.sh`, `verify-atlassian.sh`)
+are still there and idempotent — call them directly if you only want one step (e.g. to
+rotate a PAT: `bash .../scripts/setup-atlassian.sh`).
 
 ### Try without installing
 
