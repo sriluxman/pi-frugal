@@ -6,7 +6,7 @@
 
 set -eu
 
-ATL_DIR="${PI_FRUGAL_ATLASSIAN_DIR:-$HOME/.pi/agent/git/github.com/langpingxue/atlassian-skills}"
+ATL_DIR="${PI_FRUGAL_ATLASSIAN_DIR:-$HOME/.pi/agent/git/github.com/sriluxman/atlassian-skills/atlassian-skills}"
 ATL_ENV="${PI_FRUGAL_ATLASSIAN_ENV:-$HOME/.pi/agent/secrets/atlassian.env}"
 ATL_PY="${PI_FRUGAL_ATLASSIAN_PY:-$ATL_DIR/.venv/bin/python}"
 
@@ -16,7 +16,7 @@ echo "  env file    : ${ATL_ENV}"
 echo "  python      : ${ATL_PY}"
 echo
 
-[ -d "${ATL_DIR}" ]  || { echo "✗ scripts dir missing — run: pi install git:github.com/langpingxue/atlassian-skills"; exit 2; }
+[ -d "${ATL_DIR}" ]  || { echo "✗ scripts dir missing — run: pi install git:github.com/sriluxman/atlassian-skills"; exit 2; }
 [ -f "${ATL_ENV}" ] || { echo "✗ secrets file missing — run: bash $(dirname "$0")/setup-atlassian.sh"; exit 2; }
 [ -x "${ATL_PY}" ]  || { echo "✗ venv python missing — run: cd \"${ATL_DIR}\" && uv venv .venv && .venv/bin/pip install requests python-dotenv"; exit 2; }
 

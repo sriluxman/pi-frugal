@@ -38,8 +38,8 @@ package rebuild.
 
 ### 2. Thin overlay over a thick upstream toolkit
 
-The upstream `langpingxue/atlassian-skills` has a full 45-function catalog
-and a 17 KB SKILL.md describing all of them. Our overlay (~250 lines) lists
+The upstream `sriluxman/atlassian-skills` has a full 45+ function catalog
+(including Requirements Yogi support) and a 17 KB SKILL.md describing all of them. Our overlay (~250 lines) lists
 only what the agent needs to **find** functions, then tells it to `read` the
 upstream SKILL.md / REFERENCE.md on demand for exact signatures.
 
@@ -126,7 +126,7 @@ and the verify script self-heals if mode drifts.
 
 ### 8. Composition over bundling for upstream skills
 
-We could vendor `obra/superpowers` and `langpingxue/atlassian-skills` into
+We could vendor `obra/superpowers` and `sriluxman/atlassian-skills` into
 the package for a one-shot install. Rejected:
 
 - Updates lag behind upstream until we cut a new release.

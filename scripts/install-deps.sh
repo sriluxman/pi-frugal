@@ -3,7 +3,7 @@
 #
 # pi-frugal composes with:
 #   - obra/superpowers          (14 productivity skills)
-#   - langpingxue/atlassian-skills  (Jira/Confluence/Bitbucket Python toolkit)
+#   - sriluxman/atlassian-skills   (Jira/Confluence/Bitbucket/Requirements Yogi Python toolkit)
 #
 # Re-running is safe: pi install is idempotent.
 
@@ -14,10 +14,10 @@ echo
 
 pi install git:github.com/obra/superpowers
 echo
-pi install git:github.com/langpingxue/atlassian-skills
+pi install git:github.com/sriluxman/atlassian-skills
 
 # Prepare the Python venv for the atlassian toolkit (one-time).
-ATL_DIR="${HOME}/.pi/agent/git/github.com/langpingxue/atlassian-skills"
+ATL_DIR="${HOME}/.pi/agent/git/github.com/sriluxman/atlassian-skills/atlassian-skills"
 if [ -d "${ATL_DIR}" ] && [ ! -x "${ATL_DIR}/.venv/bin/python" ]; then
   echo
   echo "Setting up Python venv for atlassian-skills (one-time)…"

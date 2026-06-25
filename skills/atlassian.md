@@ -1,12 +1,12 @@
 ---
 name: atlassian
-description: Run Jira / Confluence / Bitbucket operations (read + write) against your Atlassian instance via the langpingxue/atlassian-skills Python toolkit. Use for get/search/create/update Jira issues, transitions, worklogs, sprints; read/create/update/delete Confluence pages, comments, labels; Bitbucket projects, repos, PRs, commits, file content. Hard-gates write operations until the user approves.
+description: Run Jira / Confluence / Bitbucket / Requirements Yogi operations (read + write) against your Atlassian instance via the sriluxman/atlassian-skills Python toolkit. Use for get/search/create/update Jira issues, transitions, worklogs, sprints; read/create/update/delete Confluence pages, comments, labels; Bitbucket projects, repos, PRs, commits, file content; Requirements Yogi requirement CRUD. Hard-gates write operations until the user approves.
 ---
 
-# atlassian (pi-frugal execution overlay for langpingxue/atlassian-skills)
+# atlassian (pi-frugal execution overlay for sriluxman/atlassian-skills)
 
 This is a thin **execution wrapper** that tells you how to invoke
-`langpingxue/atlassian-skills` (full read+write variant) from inside pi, using
+`sriluxman/atlassian-skills` (full read+write variant, with Requirements Yogi support) from inside pi, using
 credentials kept in a chmod-600 secrets file outside this repo.
 
 The upstream toolkit ships its own `SKILL.md` + `REFERENCE.md` with the full
@@ -18,11 +18,11 @@ listed below.
 
 1. Install the upstream Python toolkit:
    ```
-   pi install git:github.com/langpingxue/atlassian-skills
+   pi install git:github.com/sriluxman/atlassian-skills
    ```
 2. Create the venv + install requests/python-dotenv (one-time):
    ```
-   cd "$(node -e 'console.log(require("os").homedir())')/.pi/agent/git/github.com/langpingxue/atlassian-skills"
+   cd "$(node -e 'console.log(require("os").homedir())')/.pi/agent/git/github.com/sriluxman/atlassian-skills/atlassian-skills"
    uv venv .venv && .venv/bin/pip install requests python-dotenv
    ```
 3. Run the setup script (interactive prompts for URLs + PATs):
@@ -35,14 +35,14 @@ listed below.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PI_FRUGAL_ATLASSIAN_DIR` | `~/.pi/agent/git/github.com/langpingxue/atlassian-skills` | Where the upstream Python scripts live |
+| `PI_FRUGAL_ATLASSIAN_DIR` | `~/.pi/agent/git/github.com/sriluxman/atlassian-skills/atlassian-skills` | Where the upstream Python scripts live |
 | `PI_FRUGAL_ATLASSIAN_ENV` | `~/.pi/agent/secrets/atlassian.env` | Where the PAT-bearing env file lives |
 | `PI_FRUGAL_ATLASSIAN_PY` | `<atlassian-dir>/.venv/bin/python` | Python interpreter to use |
 
 ## Execution recipe (use the bundled venv; load creds from the secrets file)
 
 ```bash
-ATL_DIR="${PI_FRUGAL_ATLASSIAN_DIR:-$HOME/.pi/agent/git/github.com/langpingxue/atlassian-skills}"
+ATL_DIR="${PI_FRUGAL_ATLASSIAN_DIR:-$HOME/.pi/agent/git/github.com/sriluxman/atlassian-skills/atlassian-skills}"
 ATL_ENV="${PI_FRUGAL_ATLASSIAN_ENV:-$HOME/.pi/agent/secrets/atlassian.env}"
 ATL_PY="${PI_FRUGAL_ATLASSIAN_PY:-$ATL_DIR/.venv/bin/python}"
 

@@ -2,7 +2,7 @@
 
 ![demo](docs/demo.gif)
 
-**A lean, cost-aware [pi](https://pi.dev) setup** — tiered model routing, live AiCredits visibility, and a thin Atlassian (Jira / Confluence / Bitbucket) overlay. Designed to give you the productivity of obra/superpowers + the API reach of langpingxue/atlassian-skills, without the per-turn token bloat of MCP servers or one-model-for-everything defaults.
+**A lean, cost-aware [pi](https://pi.dev) setup** — tiered model routing, live AiCredits visibility, and a thin Atlassian (Jira / Confluence / Bitbucket / Requirements Yogi) overlay. Designed to give you the productivity of obra/superpowers + the API reach of sriluxman/atlassian-skills (with Requirements Yogi support), without the per-turn token bloat of MCP servers or one-model-for-everything defaults.
 
 ---
 
@@ -12,7 +12,7 @@
 |---|---|---|
 | **tier-router** | extension | Auto-picks **Haiku** (retrieval/lookup), **Sonnet** (design/brainstorming), or **Opus** (essential implementation) per prompt. Explicit `,haiku` / `,sonnet` / `,opus` overrides; `/route off` to disable. Conservative: ambiguous prompts default to Opus, never silently downgrades, honours user model pins. |
 | **aicredits-footer** | extension | Replaces pi's default USD footer with **AiCredits** computed from your real billing rates. Per-session totals shown live as `↑in R cacheRead W cacheWrite ↓out C credits`. Rates fully overridable via `AICREDITS_RATES` env. |
-| **atlassian** (overlay) | skill | Thin (~250 line) overlay that tells the agent how to invoke `langpingxue/atlassian-skills` from inside pi, with a `<HARD-GATE>` around every mutating call. Credentials live in `~/.pi/agent/secrets/atlassian.env` (chmod 600) — never in the repo. |
+| **atlassian** (overlay) | skill | Thin (~250 line) overlay that tells the agent how to invoke `sriluxman/atlassian-skills` (Jira/Confluence/Bitbucket/Requirements Yogi) from inside pi, with a `<HARD-GATE>` around every mutating call. Credentials live in `~/.pi/agent/secrets/atlassian.env` (chmod 600) — never in the repo. |
 
 ### What you don't get
 
@@ -30,7 +30,7 @@ pi install git:github.com/sriluxman/pi-frugal
 
 # 2. install the upstream skill packs it composes with
 bash ~/.pi/agent/git/github.com/sriluxman/pi-frugal/scripts/install-deps.sh
-#    (this runs `pi install` for obra/superpowers + langpingxue/atlassian-skills
+#    (this runs `pi install` for obra/superpowers + sriluxman/atlassian-skills (with Req Yogi)
 #     and prepares the Python venv)
 
 # 3. configure your Atlassian credentials (interactive; writes secrets file 0600)
@@ -90,7 +90,7 @@ If your provider supports more (e.g. direct Anthropic): use `minimal` / `low` / 
 
 | Env | Default |
 |---|---|
-| `PI_FRUGAL_ATLASSIAN_DIR` | `~/.pi/agent/git/github.com/langpingxue/atlassian-skills` |
+| `PI_FRUGAL_ATLASSIAN_DIR` | `~/.pi/agent/git/github.com/sriluxman/atlassian-skills/atlassian-skills` |
 | `PI_FRUGAL_ATLASSIAN_ENV` | `~/.pi/agent/secrets/atlassian.env` |
 | `PI_FRUGAL_ATLASSIAN_PY` | `<dir>/.venv/bin/python` |
 
@@ -143,7 +143,7 @@ See [docs/design.md](docs/design.md) for the full design rationale.
 ## Composes with (not bundled)
 
 - [obra/superpowers](https://github.com/obra/superpowers) — 14 productivity skills (brainstorming, writing-plans, systematic-debugging, verification-before-completion, …)
-- [langpingxue/atlassian-skills](https://github.com/langpingxue/atlassian-skills) — Python toolkit, 45 functions across Jira / Confluence / Bitbucket
+- [sriluxman/atlassian-skills](https://github.com/sriluxman/atlassian-skills) — Python toolkit with Requirements Yogi support: 45+ functions across Jira / Confluence / Bitbucket / Requirements Yogi
 
 Both are installed via `pi install` and stay current with their upstream.
 
