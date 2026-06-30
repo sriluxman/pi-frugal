@@ -39,24 +39,37 @@ listed below.
 | `PI_FRUGAL_ATLASSIAN_ENV` | `~/.pi/agent/secrets/atlassian.env` | Where the PAT-bearing env file lives |
 | `PI_FRUGAL_ATLASSIAN_PY` | `<atlassian-dir>/.venv/bin/python` | Python interpreter to use |
 
-## Execution recipe (use the bundled venv; load creds from the secrets file)
+## Execution recipe (single-line runner — robust across all harnesses)
+
+Use the bundled `atl_run.py` runner. It loads creds from the secrets file and
+dispatches to any toolkit function, so every call is a **single flat line**
+(`function key=value ...`). This is the recommended pattern — it works
+identically on frontier and small/local models (local models often flatten
+multi-line `python -c` blocks, breaking the imports).
 
 ```bash
 ATL_DIR="${PI_FRUGAL_ATLASSIAN_DIR:-$HOME/.pi/agent/git/github.com/sriluxman/atlassian-skills/atlassian-skills}"
-ATL_ENV="${PI_FRUGAL_ATLASSIAN_ENV:-$HOME/.pi/agent/secrets/atlassian.env}"
 ATL_PY="${PI_FRUGAL_ATLASSIAN_PY:-$ATL_DIR/.venv/bin/python}"
 
-cd "$ATL_DIR" && "$ATL_PY" -c "
-import sys, os
-sys.path.insert(0, '.')
-from dotenv import load_dotenv
-load_dotenv('$ATL_ENV')
-from scripts.jira_search import jira_search
-print(jira_search(jql='project = MYPROJ AND sprint in openSprints()', fields='summary,status,assignee', limit=20))
-"
+# Fetch one issue:
+cd "$ATL_DIR" && "$ATL_PY" atl_run.py jira_get_issue issue_key=THCU-2473 fields=summary,status,assignee
+
+# Search (quote values with spaces):
+cd "$ATL_DIR" && "$ATL_PY" atl_run.py jira_search jql="project = MYPROJ AND sprint in openSprints()" fields=summary,status,assignee limit=20
 ```
 
-The pattern is the same for every function — change the `from scripts.X import Y` line and the call.
+The pattern is the same for every function — `atl_run.py <function> key=value ...`.
+The credentials file is auto-loaded from `$ATL_ENV` (default
+`~/.pi/agent/secrets/atlassian.env`). Run `"$ATL_PY" atl_run.py --help` for details.
+
+### Fallback: inline `python -c` (frontier models only)
+
+If you need a function not yet importable via the runner, the raw form still
+works — but keep it to ONE line so it survives whitespace flattening:
+
+```bash
+cd "$ATL_DIR" && "$ATL_PY" -c "import sys; sys.path.insert(0,'.'); from dotenv import load_dotenv; load_dotenv('$ATL_ENV'); from scripts.jira_search import jira_search; print(jira_search(jql='project = MYPROJ', fields='summary', limit=20))"
+```
 
 ## <HARD-GATE> Write operations
 
