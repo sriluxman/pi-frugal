@@ -104,14 +104,21 @@ Storage format quick reference:
 - Tables: standard `<table><tr><th>…</th></tr><tr><td>…</td></tr></table>`
 - Links: `<a href="…">…</a>` · Page mention: `<ac:link><ri:page ri:content-title="Page Title" /></ac:link>`
 
-## Function catalog (45 functions, abbreviated)
+## Function catalog (bare names — call via the runner)
 
-For exact signatures (parameter names, optional fields, return shape) read on demand:
+**How to invoke:** every function is called by its **bare name** as the first
+argument to `atl_run.py` (see the Execution recipe above), e.g.
+`atl_run.py jira_get_issue issue_key=ABC-1`. Do **not** invent CLI commands
+like `pi skill atlassian --help` — there is no such command. If you need a
+function not listed here, discover the full set with:
 
+```bash
+cd "$ATL_DIR" && "$ATL_PY" atl_run.py --list        # all function names, grouped
+read $PI_FRUGAL_ATLASSIAN_DIR/REFERENCE.md          # full param reference
 ```
-read $PI_FRUGAL_ATLASSIAN_DIR/SKILL.md       # usage patterns
-read $PI_FRUGAL_ATLASSIAN_DIR/REFERENCE.md   # full param reference
-```
+
+The dotted `scripts.module.function` paths below are only for the inline
+`python -c` fallback; with the runner you pass just the final name.
 
 ### Jira read
 `scripts.jira_issues.jira_get_issue` · `scripts.jira_search.jira_search` · `scripts.jira_search.jira_search_fields` · `scripts.jira_workflow.jira_get_transitions` · `scripts.jira_agile.{jira_get_agile_boards, jira_get_board_issues, jira_get_sprints_from_board, jira_get_sprint_issues}` · `scripts.jira_links.jira_get_link_types` · `scripts.jira_worklog.jira_get_worklog` · `scripts.jira_projects.{jira_get_all_projects, jira_get_project_issues, jira_get_project_versions}` · `scripts.jira_users.jira_get_user_profile`
@@ -124,6 +131,22 @@ read $PI_FRUGAL_ATLASSIAN_DIR/REFERENCE.md   # full param reference
 
 ### Confluence write (gated)
 `scripts.confluence_pages.{confluence_create_page, confluence_update_page, confluence_delete_page}` · `scripts.confluence_comments.confluence_add_comment` · `scripts.confluence_labels.{confluence_add_label, confluence_remove_label}`
+
+### Requirements Yogi (read; create/update/delete gated)
+Requirements live in a Confluence space and are addressed by `space_key` +
+`requirement_key` (e.g. `space_key=SIM requirement_key=SIM-001`). To browse a
+space first, use `requirement_yogi_list_requirements`.
+- `requirement_yogi_list_requirements(space_key, query=None, limit=...)` — list/search requirements in a space
+- `requirement_yogi_get_requirement(space_key, requirement_key)` — fetch one requirement (title + content)
+- `requirement_yogi_create_requirement(space_key, requirement_key, title, content_html, properties)` — **gated**
+- `requirement_yogi_update_requirement(space_key, requirement_key, title, content_html, properties)` — **gated**
+- `requirement_yogi_delete_requirement(space_key, requirement_key)` — **gated**
+- `requirement_yogi_bulk_update_requirements(space_key, requirements)` — **gated**
+
+Example (single line):
+```bash
+cd "$ATL_DIR" && "$ATL_PY" atl_run.py requirement_yogi_get_requirement space_key=SIM requirement_key=SIM-001
+```
 
 ### Bitbucket (mostly read; PR mutations gated)
 `scripts.bitbucket_projects.{bitbucket_list_projects, bitbucket_list_repositories}` · `scripts.bitbucket_pull_requests.{bitbucket_get_pull_request, bitbucket_get_pr_diff, **bitbucket_create_pull_request**, **bitbucket_merge_pull_request**, **bitbucket_decline_pull_request**, **bitbucket_add_pr_comment**}` · `scripts.bitbucket_files.{bitbucket_get_file_content, bitbucket_search}` · `scripts.bitbucket_commits.{bitbucket_get_commits, bitbucket_get_commit}`
