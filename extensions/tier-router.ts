@@ -7,7 +7,7 @@
  *   sonnet  - design, brainstorming, planning, advising (mid) — also the DEFAULT model
  *   opus    - essential work: implementation, refactor, deep debug (most expensive)
  *
- *   local   - OPTIONAL. When a local model (default local-llm/qwen3-30b-a3b) is present
+ *   local   - OPTIONAL. When a local model (default local-llm/qwen36-35b-a3b) is present
  *             in the model registry, the cheap retrieval tier routes to it instead of
  *             cloud haiku (zero token cost). Auto-detected per machine: boxes without a
  *             local model silently fall back to cloud haiku. No per-machine config needed.
@@ -87,14 +87,14 @@ function loadThinking(): Record<Tier, Thinking> {
 // Optional local model that replaces the cheap (haiku) tier when it is present
 // in the model registry. Auto-detected per machine; machines without it fall
 // back to cloud haiku. Override/disable via env TIER_ROUTER_LOCAL:
-//   TIER_ROUTER_LOCAL='{"provider":"local-llm","model":"qwen3-30b-a3b","thinking":"off"}'
+//   TIER_ROUTER_LOCAL='{"provider":"local-llm","model":"qwen36-35b-a3b","thinking":"off"}'
 //   TIER_ROUTER_LOCAL=off   -> never route to a local model
 interface LocalConfig {
 	provider: string;
 	model: string;
 	thinking: Thinking;
 }
-const DEFAULT_LOCAL: LocalConfig = { provider: "local-llm", model: "qwen3-30b-a3b", thinking: "off" };
+const DEFAULT_LOCAL: LocalConfig = { provider: "local-llm", model: "qwen36-35b-a3b", thinking: "off" };
 function loadLocal(): LocalConfig | null {
 	const env = process.env.TIER_ROUTER_LOCAL;
 	if (env && env.trim().toLowerCase() === "off") return null;
