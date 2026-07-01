@@ -14,6 +14,14 @@ The upstream toolkit ships its own `SKILL.md` + `REFERENCE.md` with the full
 auto-loaded — read them on demand the first time you need a function not
 listed below.
 
+> **Running on a small / local model?** Always trigger this skill *explicitly*
+> with `/skill:atlassian ...` rather than a bare "use the atlassian skill"
+> mention. Small local models don't reliably go read the skill file on their
+> own — they hallucinate a non-existent `atlassian` CLI. Invoking `/skill:` injects
+> this body into context, and the frugal tier-router then routes the turn to the
+> local model (zero token cost) with the exact `atl_run.py` recipe in view, which
+> makes them one-shot the tool calls reliably.
+
 ## Prerequisites (one-time setup)
 
 1. Install the upstream Python toolkit:

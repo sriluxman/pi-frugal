@@ -3,9 +3,14 @@
  *
  * Auto-routes each user prompt to a model tier based on intent:
  *
- *   haiku   - retrieval / Q&A / lookup work (cheapest)
- *   sonnet  - design, brainstorming, planning, advising (mid)
+ *   haiku   - retrieval / Q&A / lookup work (cheapest cloud tier)
+ *   sonnet  - design, brainstorming, planning, advising (mid) — also the DEFAULT model
  *   opus    - essential work: implementation, refactor, deep debug (most expensive)
+ *
+ *   local   - OPTIONAL. When a local model (default local-llm/qwen3-30b-a3b) is present
+ *             in the model registry, the cheap retrieval tier routes to it instead of
+ *             cloud haiku (zero token cost). Auto-detected per machine: boxes without a
+ *             local model silently fall back to cloud haiku. No per-machine config needed.
  *
  * Decision precedence (first match wins):
  *   1. Explicit comma prefix:    ",haiku ...", ",sonnet ...", ",opus ..."   (prefix is stripped)
@@ -15,7 +20,7 @@
  *                                 /skill:atlassian (read-only verbs) -> haiku
  *   4. User explicitly picked a model via /model or Ctrl+P after route-on -> stays pinned for the session
  *   5. Keyword classifier on the prompt text -> tier
- *   6. Fallback                                                      -> opus  (do not silently downgrade)
+ *   6. Fallback (no classification signal)                          -> sonnet (the default tier; never silently jump to opus)
  *
  * Guard rails:
  *   - If accumulated context > 100K tokens, never downgrade to haiku (context limit).
@@ -79,6 +84,33 @@ function loadThinking(): Record<Tier, Thinking> {
 	}
 }
 
+// Optional local model that replaces the cheap (haiku) tier when it is present
+// in the model registry. Auto-detected per machine; machines without it fall
+// back to cloud haiku. Override/disable via env TIER_ROUTER_LOCAL:
+//   TIER_ROUTER_LOCAL='{"provider":"local-llm","model":"qwen3-30b-a3b","thinking":"off"}'
+//   TIER_ROUTER_LOCAL=off   -> never route to a local model
+interface LocalConfig {
+	provider: string;
+	model: string;
+	thinking: Thinking;
+}
+const DEFAULT_LOCAL: LocalConfig = { provider: "local-llm", model: "qwen3-30b-a3b", thinking: "off" };
+function loadLocal(): LocalConfig | null {
+	const env = process.env.TIER_ROUTER_LOCAL;
+	if (env && env.trim().toLowerCase() === "off") return null;
+	if (!env) return DEFAULT_LOCAL;
+	try {
+		const p = JSON.parse(env);
+		return {
+			provider: p.provider ?? DEFAULT_LOCAL.provider,
+			model: p.model ?? DEFAULT_LOCAL.model,
+			thinking: p.thinking ?? DEFAULT_LOCAL.thinking,
+		};
+	} catch {
+		return DEFAULT_LOCAL;
+	}
+}
+
 function loadConfig(): TierConfig {
 	const env = process.env.TIER_ROUTER_MODELS;
 	if (!env) return DEFAULT_CONFIG;
@@ -99,10 +131,24 @@ function loadConfig(): TierConfig {
 const SONNET_SKILL_HINTS = [
 	"/skill:brainstorming",
 	"/skill:writing-plans",
+	"/skill:architecture",
+	"/skill:product",
+	"/skill:requirements-engineering",
+	"/skill:writing-skills",
+	// archived aliases, kept for back-compat with old sessions/muscle memory:
 	"/skill:po-advisor",
 	"/skill:architecture-advisor",
-	"/skill:writing-skills",
 	"/skill:c4-modelling",
+];
+
+// Haiku (→ local when available): retrieval-heavy skills. Injecting the skill
+// body is what makes small local models reliably one-shot the tool calls, so
+// these belong on the cheap tier.
+const HAIKU_SKILL_HINTS = [
+	"/skill:atlassian",
+	"/skill:atlassian-br-patterns",
+	"/skill:atlassian-epic-creation-guide",
+	"/skill:dps-platform",
 ];
 const SONNET_KEYWORDS = [
 	/\bdesign\b/i,
@@ -159,12 +205,22 @@ const OPUS_KEYWORDS = [
 	/```/, // code block in the prompt
 ];
 
+function skillTier(rawText: string): Tier | undefined {
+	const text = rawText.trimStart();
+	for (const hint of HAIKU_SKILL_HINTS) if (text.startsWith(hint)) return "haiku";
+	for (const hint of SONNET_SKILL_HINTS) if (text.startsWith(hint)) return "sonnet";
+	return undefined;
+}
+
 function classify(rawText: string): { tier: Tier; reason: string } | null {
 	const text = rawText.trim();
 	if (!text) return null;
 
-	// Skill-command hints (sonnet) — checked before keyword scan because the skill
-	// body would otherwise be expanded later and could bias toward other tiers.
+	// Skill-command hints — checked before keyword scan because the skill body
+	// would otherwise be expanded later and could bias toward other tiers.
+	for (const hint of HAIKU_SKILL_HINTS) {
+		if (text.startsWith(hint)) return { tier: "haiku", reason: `skill ${hint.slice(7)}` };
+	}
 	for (const hint of SONNET_SKILL_HINTS) {
 		if (text.startsWith(hint)) return { tier: "sonnet", reason: `skill ${hint.slice(7)}` };
 	}
@@ -203,6 +259,7 @@ function parseBangPrefix(text: string): { tier: Tier; rest: string } | null {
 
 export default function (pi: ExtensionAPI) {
 	const config = loadConfig();
+	const local = loadLocal();
 	const thinkingByTier = loadThinking();
 
 	// Mode: "auto" = classify each prompt; "off" = never auto-switch.
@@ -211,8 +268,16 @@ export default function (pi: ExtensionAPI) {
 	// One-shot tier set by user via `/route haiku|sonnet|opus`. Cleared after one prompt.
 	let oneShot: Tier | undefined;
 
+	// Tier implied by a /skill:<name> command, captured from the RAW input before
+	// pi expands the skill body. Consumed on the next before_agent_start.
+	let pendingSkillTier: Tier | undefined;
+
 	// Latest classification, for status display.
-	let lastDecision: { tier: Tier; reason: string } | undefined;
+	let lastDecision: { tier: Tier; reason: string; label?: string } | undefined;
+
+	// The concrete provider/id we most recently applied (may be the local
+	// substitute for the cheap tier). Used to recognise our own model changes.
+	let lastApplied: { provider: string; id: string } | undefined;
 
 	// User explicitly picked a model? If so, do not auto-route until they say /route auto again.
 	let userPinned = false;
@@ -223,39 +288,76 @@ export default function (pi: ExtensionAPI) {
 	function statusFor(): string | undefined {
 		if (mode === "off") return "route:off";
 		if (!lastDecision) return undefined;
-		return `route:${lastDecision.tier} (${lastDecision.reason})`;
+		const label = lastDecision.label ?? lastDecision.tier;
+		return `route:${label} (${lastDecision.reason})`;
 	}
 
 	function setStatus(ctx: ExtensionContext) {
 		if (ctx.hasUI) ctx.ui.setStatus("tier-router", statusFor());
 	}
 
-	async function applyTier(tier: Tier, reason: string, ctx: ExtensionContext) {
-		const targetId = config.models[tier];
-		const targetThinking = thinkingByTier[tier];
+	// Is the configured local model actually present on this machine?
+	function localModel(ctx: ExtensionContext) {
+		if (!local) return undefined;
+		return ctx.modelRegistry.find(local.provider, local.model) ?? undefined;
+	}
 
-		// Always set thinking level for the tier (cheap and idempotent).
-		if (pi.getThinkingLevel() !== targetThinking) {
-			pi.setThinkingLevel(targetThinking);
+	// Resolve a tier to a concrete target, substituting the local model for the
+	// cheap (haiku) tier when it is available on this machine.
+	function resolveTarget(
+		tier: Tier,
+		ctx: ExtensionContext,
+	): { provider: string; id: string; thinking: Thinking; label: string } {
+		if (tier === "haiku" && local && localModel(ctx)) {
+			return { provider: local.provider, id: local.model, thinking: local.thinking, label: "local" };
+		}
+		return { provider: config.provider, id: config.models[tier], thinking: thinkingByTier[tier], label: tier };
+	}
+
+	async function applyTier(tier: Tier, reason: string, ctx: ExtensionContext) {
+		const t = resolveTarget(tier, ctx);
+		const shownReason = t.label === "local" ? `${reason} → local` : reason;
+
+		// Always set thinking level for the target (cheap and idempotent).
+		if (pi.getThinkingLevel() !== t.thinking) {
+			pi.setThinkingLevel(t.thinking);
 		}
 
-		if (ctx.model?.id === targetId) {
-			lastDecision = { tier, reason: `${reason} (already)` };
+		if (ctx.model?.provider === t.provider && ctx.model?.id === t.id) {
+			lastApplied = { provider: t.provider, id: t.id };
+			lastDecision = { tier, reason: `${shownReason} (already)`, label: t.label };
 			setStatus(ctx);
 			return;
 		}
-		const model = ctx.modelRegistry.find(config.provider, targetId);
+		const model = ctx.modelRegistry.find(t.provider, t.id);
 		if (!model) {
-			ctx.ui.notify(`tier-router: model ${config.provider}/${targetId} not found`, "warning");
+			ctx.ui.notify(`tier-router: model ${t.provider}/${t.id} not found`, "warning");
 			return;
 		}
 		const ok = await pi.setModel(model);
 		if (!ok) {
-			ctx.ui.notify(`tier-router: no API key for ${config.provider}/${targetId}`, "warning");
+			ctx.ui.notify(`tier-router: no API key for ${t.provider}/${t.id}`, "warning");
 			return;
 		}
-		lastDecision = { tier, reason };
+		lastApplied = { provider: t.provider, id: t.id };
+		lastDecision = { tier, reason: shownReason, label: t.label };
 		setStatus(ctx);
+	}
+
+	// Apply a tier plus the cheap-tier context guard: the local model (or cloud
+	// haiku) has a smaller window, so bump to cloud sonnet past the limit.
+	async function routeTier(tier: Tier, reason: string, ctx: ExtensionContext) {
+		if (tier === "haiku") {
+			const usage = ctx.getContextUsage?.();
+			const cheapLimit = localModel(ctx) ? 28_000 : 100_000;
+			if (usage && usage.tokens > cheapLimit) {
+				await applyTier("sonnet", `${reason} +bigctx`, ctx);
+				routedThisPrompt = true;
+				return;
+			}
+		}
+		await applyTier(tier, reason, ctx);
+		routedThisPrompt = true;
 	}
 
 	// Capture user-driven model changes so we do not fight them.
@@ -266,8 +368,9 @@ export default function (pi: ExtensionAPI) {
 			// Did we just do it ourselves?  ctx.model is the new one; if it matches our last
 			// applied tier's model AND we set it within the current prompt cycle, ignore.
 			const isOurs =
-				lastDecision &&
-				event.model.id === config.models[lastDecision.tier] &&
+				lastApplied &&
+				event.model.provider === lastApplied.provider &&
+				event.model.id === lastApplied.id &&
 				routedThisPrompt;
 			if (!isOurs) {
 				userPinned = true;
@@ -277,9 +380,11 @@ export default function (pi: ExtensionAPI) {
 		}
 	});
 
-	// Strip ",tier " prefix before skill / template expansion.
+	// Strip ",tier " prefix before skill / template expansion, and capture any
+	// /skill:<name> command from the RAW input (pre-expansion) for routing.
 	pi.on("input", async (event, _ctx) => {
 		if (event.source !== "interactive" && event.source !== "rpc") return;
+		pendingSkillTier = skillTier(event.text);
 		const parsed = parseBangPrefix(event.text);
 		if (!parsed) return;
 		oneShot = parsed.tier;
@@ -294,40 +399,43 @@ export default function (pi: ExtensionAPI) {
 		if (oneShot) {
 			const tier = oneShot;
 			oneShot = undefined;
+			pendingSkillTier = undefined;
 			await applyTier(tier, ",override", ctx);
 			routedThisPrompt = true;
 			return;
 		}
 
 		if (mode === "off") {
+			pendingSkillTier = undefined;
 			setStatus(ctx);
 			return;
 		}
 
 		if (userPinned) {
+			pendingSkillTier = undefined;
 			lastDecision = undefined;
 			setStatus(ctx);
 			return;
 		}
 
+		// Skill-command routing, captured from the raw input before expansion.
+		if (pendingSkillTier) {
+			const tier = pendingSkillTier;
+			pendingSkillTier = undefined;
+			await routeTier(tier, "skill", ctx);
+			return;
+		}
+
 		const decision = classify(event.prompt);
 		if (!decision) {
-			// No signal -> default to opus (do not silently downgrade).
-			await applyTier("opus", "default", ctx);
+			// No classification signal -> stay on the default tier (sonnet).
+			// Never silently jump to opus; routing only escalates on a clear signal.
+			await applyTier("sonnet", "default", ctx);
 			routedThisPrompt = true;
 			return;
 		}
 
-		// Guard: do not downgrade to haiku when context is already large.
-		const usage = ctx.getContextUsage?.();
-		if (decision.tier === "haiku" && usage && usage.tokens > 100_000) {
-			await applyTier("sonnet", `${decision.reason} +bigctx`, ctx);
-			routedThisPrompt = true;
-			return;
-		}
-
-		await applyTier(decision.tier, decision.reason, ctx);
-		routedThisPrompt = true;
+		await routeTier(decision.tier, decision.reason, ctx);
 	});
 
 	// Allow next prompt to route again (reset per-prompt latch).
@@ -355,6 +463,7 @@ export default function (pi: ExtensionAPI) {
 							`last call : ${lastDecision ? `${lastDecision.tier} — ${lastDecision.reason}` : "(none yet)"}`,
 							`current   : ${ctx.model?.id ?? "(no model)"}`,
 							`tiers     : haiku=${config.models.haiku}  sonnet=${config.models.sonnet}  opus=${config.models.opus}`,
+							`local     : ${local ? `${local.provider}/${local.model} ${localModel(ctx) ? "— available; cheap tier routes here" : "— not on this machine"}` : "(disabled)"}`,
 							`thinking  : haiku=${thinkingByTier.haiku}  sonnet=${thinkingByTier.sonnet}  opus=${thinkingByTier.opus}`,
 						].join("\n"),
 						"info",
