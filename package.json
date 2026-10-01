@@ -22,6 +22,9 @@
     "url": "https://github.com/sriluxman/pi-frugal"
   },
   "homepage": "https://github.com/sriluxman/pi-frugal",
+  "scripts": {
+    "test": "node scripts/check-package.mjs"
+  },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-ai": "*",
